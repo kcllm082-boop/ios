@@ -1,7 +1,7 @@
 {
   "name": "DPI IOS",
   "short_name": "DPI IOS",
-  "start_url": "./index.html",
+  "start_url": "https://kcllm082-boop.github.io/ios/index.html",
   "scope": "./",
   "display": "fullscreen",
   "orientation": "portrait",
