@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="DPI IOS"/>
+<meta name="theme-color" content="#a855f7"/>
+<link rel="manifest" href="./manifest.json"/>
+<link rel="apple-touch-icon" href="./icon-180.png"/>
+<title>DPI IOS — PHG EXTERNAL</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --neon:#a855f7;--neon2:#d946ef;--neon3:#7c3aed;
+  --bg:#0a0612;--card:rgba(24,10,40,.85);--line:rgba(168,85,247,.35);
+  --txt:#f3e8ff;--sub:#a78bfa;--err:#ff4d6d;--ok:#22d3a6;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,"SF Pro Text","Helvetica Neue",sans-serif;overflow:hidden;}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;
+  background:radial-gradient(circle at 20% 20%,rgba(168,85,247,.25),transparent 45%),
+             radial-gradient(circle at 80% 80%,rgba(217,70,239,.22),transparent 45%),
+             radial-gradient(circle at 50% 50%,rgba(124,58,237,.18),transparent 55%);
+  filter:blur(20px);animation:bgmove 18s ease-in-out infinite alternate;}
+@keyframes bgmove{0%{transform:translate(0,0) scale(1);}100%{transform:translate(-4%,-3%) scale(1.08);}}
+.hidden{display:none !important;}
+
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:22px;z-index:10;}
+.login-card{width:100%;max-width:390px;background:var(--card);border:1px solid var(--line);
+  border-radius:22px;padding:28px 22px;backdrop-filter:blur(18px);
+  box-shadow:0 0 22px rgba(168,85,247,.4),0 0 60px rgba(217,70,239,.18),inset 0 0 30px rgba(168,85,247,.08);}
+.logo{font-size:26px;font-weight:800;letter-spacing:2px;text-align:center;margin-bottom:4px;
+  background:linear-gradient(90deg,#a855f7,#d946ef,#7c3aed);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 8px rgba(168,85,247,.8));}
+.logo-sub{text-align:center;font-size:11px;letter-spacing:3px;color:var(--sub);margin-bottom:22px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-size:11px;letter-spacing:1.5px;color:var(--sub);margin-bottom:6px;text-transform:uppercase;}
+.field input{width:100%;padding:13px 14px;background:rgba(10,6,18,.85);
+  border:1px solid var(--line);border-radius:12px;color:var(--txt);font-size:15px;
+  outline:none;transition:.2s;letter-spacing:.5px;}
+.field input:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(168,85,247,.22),0 0 14px rgba(168,85,247,.35);}
+.btn{width:100%;padding:14px;border:none;border-radius:12px;font-size:15px;font-weight:700;
+  letter-spacing:1.5px;cursor:pointer;transition:.2s;text-transform:uppercase;}
+.btn-primary{background:linear-gradient(90deg,#7c3aed,#a855f7,#d946ef);color:#fff;
+  box-shadow:0 0 16px rgba(168,85,247,.6),0 0 40px rgba(217,70,239,.3);}
+.btn-primary:active{transform:scale(.97);box-shadow:0 0 22px rgba(217,70,239,.85);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.btn-buy{margin-top:12px;background:transparent;border:1px solid var(--neon2);color:var(--neon2);
+  box-shadow:0 0 12px rgba(217,70,239,.35);}
+.btn-buy:active{transform:scale(.97);}
+.msg{margin-top:12px;text-align:center;font-size:13px;min-height:18px;}
+.msg.err{color:var(--err);}
+.msg.ok{color:var(--ok);}
+
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:0 0 76px 0;}
+#app header{padding:16px 20px 10px;display:flex;align-items:center;justify-content:space-between;}
+#app header .title{font-size:18px;font-weight:800;letter-spacing:2px;
+  background:linear-gradient(90deg,#a855f7,#d946ef);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 6px rgba(168,85,247,.85));}
+#app header .badge{font-size:10px;padding:5px 9px;border-radius:999px;
+  background:rgba(168,85,247,.15);border:1px solid var(--line);color:var(--sub);letter-spacing:1px;}
+
+.main-area{flex:1;overflow-y:auto;padding:6px 18px 20px;-webkit-overflow-scrolling:touch;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;
+  margin-bottom:14px;backdrop-filter:blur(14px);
+  box-shadow:0 0 16px rgba(168,85,247,.22),inset 0 0 18px rgba(168,85,247,.06);}
+.panel h3{margin:0 0 12px;font-size:13px;letter-spacing:2px;color:var(--sub);text-transform:uppercase;}
+
+.fn{display:flex;align-items:center;justify-content:space-between;padding:12px 4px;
+  border-bottom:1px dashed rgba(168,85,247,.18);}
+.fn:last-child{border-bottom:none;}
+.fn .name{font-size:15px;font-weight:600;letter-spacing:.8px;}
+.fn .desc{font-size:11px;color:var(--sub);margin-top:2px;}
+.switch{position:relative;width:50px;height:28px;flex-shrink:0;}
+.switch input{opacity:0;width:0;height:0;}
+.slider{position:absolute;inset:0;background:rgba(168,85,247,.18);
+  border:1px solid var(--line);border-radius:999px;cursor:pointer;transition:.25s;}
+.slider::before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;
+  background:#a78bfa;border-radius:50%;transition:.25s;box-shadow:0 0 8px rgba(168,85,247,.8);}
+.switch input:checked + .slider{background:linear-gradient(90deg,#7c3aed,#d946ef);border-color:transparent;
+  box-shadow:0 0 14px rgba(217,70,239,.7);}
+.switch input:checked + .slider::before{transform:translateX(22px);background:#fff;}
+
+.info-row{display:flex;justify-content:space-between;padding:10px 0;
+  border-bottom:1px dashed rgba(168,85,247,.18);font-size:14px;gap:12px;}
+.info-row:last-child{border-bottom:none;}
+.info-row .k{color:var(--sub);letter-spacing:.5px;flex-shrink:0;}
+.info-row .v{font-weight:600;color:var(--txt);word-break:break-all;text-align:right;}
+.contact{margin-top:12px;}
+.contact a{display:flex;align-items:center;gap:8px;padding:9px 0;color:var(--neon2);
+  text-decoration:none;font-size:14px;border-bottom:1px dashed rgba(168,85,247,.12);}
+.contact a:last-child{border-bottom:none;}
+.contact a:active{color:var(--neon);}
+.btn-logout{margin-top:16px;background:transparent;border:1px solid var(--err);color:var(--err);
+  box-shadow:0 0 12px rgba(255,77,109,.3);}
+
+.tabbar{position:fixed;left:0;right:0;bottom:0;height:76px;
+  display:flex;align-items:center;justify-content:space-around;
+  background:rgba(10,6,18,.92);border-top:1px solid var(--line);
+  backdrop-filter:blur(20px);box-shadow:0 -6px 24px rgba(168,85,247,.18);z-index:20;}
+.tab{display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:10px 22px;border-radius:14px;cursor:pointer;transition:.2s;color:var(--sub);}
+.tab .ico{font-size:20px;filter:drop-shadow(0 0 4px rgba(168,85,247,.5));}
+.tab .lbl{font-size:11px;letter-spacing:1px;font-weight:600;}
+.tab.active{color:#fff;background:linear-gradient(180deg,rgba(168,85,247,.22),rgba(217,70,239,.1));
+  box-shadow:inset 0 0 16px rgba(168,85,247,.28),0 0 12px rgba(217,70,239,.35);}
+.tab.active .ico{filter:drop-shadow(0 0 8px rgba(217,70,239,.9));}
+
+::-webkit-scrollbar{width:0;}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="login-card">
+    <div class="logo">DPI IOS</div>
+    <div class="logo-sub">PHG EXTERNAL</div>
+    <div class="field">
+      <label>KEY</label>
+      <input id="in-key" type="text" placeholder="DPI-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"/>
+    </div>
+    <button id="btn-login" class="btn btn-primary">Đăng Nhập</button>
+    <button id="btn-buy" class="btn btn-buy">Buy Key</button>
+    <div id="login-msg" class="msg"></div>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <div class="title">PHG EXTERNAL</div>
+    <div class="badge" id="hdr-badge">DPI IOS</div>
+  </header>
+
+  <div class="main-area">
+    <div id="page-home">
+      <div class="panel">
+        <h3>Chức Năng</h3>
+        <div class="fn"><div><div class="name">Aim SenSi</div><div class="desc">Tùy chỉnh độ nhạy ngắm</div></div>
+          <label class="switch"><input type="checkbox" data-fn="aim_sensi"/><span class="slider"></span></label></div>
+        <div class="fn"><div><div class="name">Nhẹ Tâm</div><div class="desc">Giảm tải xử lý</div></div>
+          <label class="switch"><input type="checkbox" data-fn="nhe_tam"/><span class="slider"></span></label></div>
+        <div class="fn"><div><div class="name">Fix Lố</div><div class="desc">Ổn định hitbox</div></div>
+          <label class="switch"><input type="checkbox" data-fn="fix_lo"/><span class="slider"></span></label></div>
+        <div class="fn"><div><div class="name">Bám Đầu</div><div class="desc">Auto tracking mục tiêu</div></div>
+          <label class="switch"><input type="checkbox" data-fn="bam_dau"/><span class="slider"></span></label></div>
+        <div class="fn"><div><div class="name">Tối Ưu Hoá</div><div class="desc">Tăng FPS, giảm lag</div></div>
+          <label class="switch"><input type="checkbox" data-fn="toi_uu_hoa"/><span class="slider"></span></label></div>
+      </div>
+    </div>
+
+    <div id="page-setting" class="hidden">
+      <div class="panel">
+        <h3>Thông Tin Key</h3>
+        <div class="info-row"><span class="k">Key</span><span class="v" id="s-key">-</span></div>
+        <div class="info-row"><span class="k">Hết hạn</span><span class="v" id="s-exp">-</span></div>
+        <div class="info-row"><span class="k">Còn lại</span><span class="v" id="s-left">-</span></div>
+        <div class="info-row"><span class="k">Trạng thái</span><span class="v" id="s-status">-</span></div>
+        <div class="info-row"><span class="k">Thiết bị</span><span class="v" id="s-dev">-</span></div>
+      </div>
+      <div class="panel">
+        <h3>Liên Hệ</h3>
+        <div class="contact">
+          <a href="https://t.me/helomoinguoi211" target="_blank" rel="noopener">✈️ Admin: @q_phuong211</a>
+          <a href="https://www.tiktok.com/@q_phuong211" target="_blank" rel="noopener">🎵 TikTok: @q_phuong211</a>
+          <a href="https://t.me/helomoinguoi211" target="_blank" rel="noopener">💬 Telegram: @helomoinguoi211</a>
+        </div>
+      </div>
+      <button id="btn-logout" class="btn btn-logout">Đăng Xuất</button>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="tab active" data-tab="home"><div class="ico">🏠</div><div class="lbl">Home</div></div>
+    <div class="tab" data-tab="setting"><div class="ico">⚙️</div><div class="lbl">Setting</div></div>
+  </div>
+</div>
+
+<script>
+/* ===== SUPABASE ===== */
+https://rocokvbjzjrqgaogdord.supabase.co/rest/v1/
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const BUY_KEY_URL = "https://t.me/helomoinguoi211";
+
+/* ===== DEVICE ID ===== */
+function getDeviceId(){
+  let id = localStorage.getItem("dpi_device_id");
+  if(!id){
+    id = "dev-" + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+      (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+    localStorage.setItem("dpi_device_id", id);
+  }
+  return id;
+}
+
+/* ===== DOM ===== */
+const $ = id => document.getElementById(id);
+const loginEl = $("login"), appEl = $("app"), loginMsg = $("login-msg");
+
+/* ===== LOGIN ===== */
+async function doLogin(){
+  const key = $("in-key").value.trim().toUpperCase();
+  if(!key){ loginMsg.className="msg err"; loginMsg.textContent="Nhập key."; return; }
+  $("btn-login").disabled = true;
+  loginMsg.className="msg"; loginMsg.textContent="Đang kiểm tra...";
+  try{
+    const deviceId = getDeviceId();
+    const { data, error } = await supabase.rpc("bind_key_device", { p_key: key, p_device: deviceId });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(!row) throw new Error("Phản hồi không hợp lệ.");
+    if(!row.ok){
+      switch(row.reason){
+        case "not_found":           throw new Error("Key sai hoặc không tồn tại.");
+        case "inactive":            throw new Error("Key đã bị khóa.");
+        case "expired":             throw new Error("Key đã hết hạn.");
+        case "used_on_other_device":throw new Error("Key đã được sử dụng trên thiết bị khác.");
+        default:                    throw new Error("Không thể đăng nhập.");
+      }
+    }
+    const session = { key, device_id: deviceId, expires_at: row.expires_at, active: row.active };
+    localStorage.setItem("dpi_key", JSON.stringify(session));
+    openApp(session);
+  }catch(e){
+    loginMsg.className="msg err";
+    loginMsg.textContent = e.message || "Lỗi đăng nhập.";
+  }finally{
+    $("btn-login").disabled = false;
+  }
+}
+
+function openApp(d){
+  loginEl.classList.add("hidden");
+  appEl.classList.remove("hidden");
+  renderSetting(d);
+}
+
+function doLogout(){
+  localStorage.removeItem("dpi_key");
+  appEl.classList.add("hidden");
+  loginEl.classList.remove("hidden");
+  $("in-key").value = "";
+  loginMsg.textContent = "";
+}
+
+/* ===== SETTING ===== */
+function fmt(ms){
+  const s = Math.floor(ms/1000), d = Math.floor(s/86400),
+        h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+  return `${d}d ${h}h ${m}m`;
+}
+function renderSetting(d){
+  $("s-key").textContent = d.key;
+  const exp = new Date(d.expires_at);
+  $("s-exp").textContent = exp.toLocaleString("vi-VN");
+  const left = exp.getTime() - Date.now();
+  $("s-left").textContent = left > 0 ? fmt(left) : "0";
+  $("s-status").textContent = left > 0 ? "Hoạt động" : "Hết hạn";
+  $("s-dev").textContent = d.device_id ? d.device_id.slice(0,16)+"…" : "-";
+}
+
+/* ===== TABS ===== */
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click", ()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");
+    const id = t.dataset.tab;
+    $("page-home").classList.toggle("hidden", id!=="home");
+    $("page-setting").classList.toggle("hidden", id!=="setting");
+  });
+});
+
+/* ===== TOGGLES ===== */
+document.querySelectorAll("input[data-fn]").forEach(inp=>{
+  const k = "dpi_fn_" + inp.dataset.fn;
+  inp.checked = localStorage.getItem(k) === "1";
+  inp.addEventListener("change", ()=> localStorage.setItem(k, inp.checked?"1":"0"));
+});
+
+/* ===== BUTTONS ===== */
+$("btn-login").addEventListener("click", doLogin);
+$("in-key").addEventListener("keydown", e=>{ if(e.key==="Enter") doLogin(); });
+$("btn-buy").addEventListener("click", ()=> window.open(BUY_KEY_URL, "_blank"));
+$("btn-logout").addEventListener("click", doLogout);
+
+/* ===== AUTO RESTORE ===== */
+(async function(){
+  const raw = localStorage.getItem("dpi_key");
+  if(!raw) return;
+  try{
+    const d = JSON.parse(raw);
+    if(!d || !d.key) return;
+    const deviceId = getDeviceId();
+    const { data, error } = await supabase.rpc("bind_key_device", { p_key: d.key, p_device: deviceId });
+    if(error) throw error;
+    const row = Array.isArray(data) ? data[0] : data;
+    if(row && row.ok){
+      d.expires_at = row.expires_at; d.active = row.active;
+      localStorage.setItem("dpi_key", JSON.stringify(d));
+      openApp(d);
+    }else{
+      localStorage.removeItem("dpi_key");
+    }
+  }catch(e){ localStorage.removeItem("dpi_key"); }
+})();
+
+/* ===== SERVICE WORKER ===== */
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("./sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>

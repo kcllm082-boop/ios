@@ -1,0 +1,15 @@
+pkg install -y imagemagick
+
+# Icon 180 / 192 / 512 (neon tím)
+for S in 180 192 512; do
+  convert -size ${S}x${S} xc:'#0a0612' \
+    -fill '#a855f7' -draw "roundrectangle 10,10 $((S-10)),$((S-10)) 30,30" \
+    -fill '#0a0612' -draw "roundrectangle 22,22 $((S-22)),$((S-22)) 22,22" \
+    -gravity center -pointsize $((S/6)) -fill '#d946ef' -annotate 0 "DPI" \
+    icon-${S}.png
+done
+
+# Nhúng base64 icon-180 vào dpi.crt
+B64=$(base64 -w0 icon-180.png)
+sed -i "s|<data>REPLACE_WITH_BASE64</data>|<data>${B64}</data>|" dpi.crt
+echo "[OK] icon embedded, size=$(echo -n "$B64" | wc -c) chars"

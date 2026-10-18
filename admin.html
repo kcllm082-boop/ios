@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>DPI ADMIN — Quản Lý Key</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--neon:#a855f7;--neon2:#d946ef;--bg:#0a0612;--card:rgba(24,10,40,.85);
+  --line:rgba(168,85,247,.35);--txt:#f3e8ff;--sub:#a78bfa;--err:#ff4d6d;--ok:#22d3a6;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--txt);
+  font-family:-apple-system,"SF Pro Text",sans-serif;padding:20px;}
+body::before{content:"";position:fixed;inset:-20%;z-index:-1;
+  background:radial-gradient(circle at 20% 20%,rgba(168,85,247,.25),transparent 45%),
+             radial-gradient(circle at 80% 80%,rgba(217,70,239,.22),transparent 45%);
+  filter:blur(20px);animation:bgmove 18s ease-in-out infinite alternate;}
+@keyframes bgmove{0%{transform:translate(0,0);}100%{transform:translate(-4%,-3%);}}
+.wrap{max-width:980px;margin:0 auto;position:relative;}
+h1{font-size:22px;letter-spacing:2px;margin:0 0 4px;
+  background:linear-gradient(90deg,#a855f7,#d946ef);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 8px rgba(168,85,247,.8));}
+.sub{color:var(--sub);font-size:12px;letter-spacing:2px;margin-bottom:20px;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;
+  margin-bottom:16px;backdrop-filter:blur(14px);
+  box-shadow:0 0 16px rgba(168,85,247,.22);}
+.panel h3{margin:0 0 14px;font-size:12px;letter-spacing:2px;color:var(--sub);text-transform:uppercase;}
+.row{display:flex;gap:10px;flex-wrap:wrap;}
+.row > *{flex:1 1 200px;}
+.field label{display:block;font-size:11px;letter-spacing:1.5px;color:var(--sub);margin-bottom:6px;}
+.field input,.field select{width:100%;padding:11px 12px;background:rgba(10,6,18,.85);
+  border:1px solid var(--line);border-radius:10px;color:var(--txt);font-size:14px;outline:none;}
+.field input:focus{border-color:var(--neon);box-shadow:0 0 0 3px rgba(168,85,247,.22);}
+.btn{padding:12px 18px;border:none;border-radius:10px;font-size:13px;font-weight:700;
+  letter-spacing:1.2px;text-transform:uppercase;cursor:pointer;transition:.2s;}
+.btn-primary{background:linear-gradient(90deg,#7c3aed,#a855f7,#d946ef);color:#fff;
+  box-shadow:0 0 16px rgba(168,85,247,.6);}
+.btn-primary:active{transform:scale(.97);}
+.btn-sm{padding:7px 10px;font-size:11px;letter-spacing:.8px;}
+.btn-del{background:transparent;border:1px solid var(--err);color:var(--err);}
+.btn-toggle{background:transparent;border:1px solid var(--neon2);color:var(--neon2);}
+.btn-reset{background:transparent;border:1px solid #f59e0b;color:#f59e0b;}
+.btn-reset:disabled{opacity:.3;cursor:not-allowed;}
+.msg{margin-top:10px;font-size:13px;}
+.msg.err{color:var(--err);} .msg.ok{color:var(--ok);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid rgba(168,85,247,.15);vertical-align:top;}
+th{color:var(--sub);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;}
+td.key{font-family:ui-monospace,Menlo,monospace;color:var(--neon2);word-break:break-all;}
+td.exp{font-size:11px;color:var(--sub);}
+.actions{display:flex;gap:6px;flex-wrap:wrap;}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>DPI ADMIN</h1>
+  <div class="sub">QUẢN LÝ KEY — PHG EXTERNAL</div>
+
+  <div class="panel" id="admin-login">
+    <h3>Đăng Nhập Admin</h3>
+    <div class="row">
+      <div class="field"><label>Mật khẩu admin</label><input id="admin-pass" type="password" placeholder="••••••"/></div>
+    </div>
+    <button class="btn btn-primary" id="btn-admin-login" style="margin-top:12px;">Đăng Nhập</button>
+    <div class="msg" id="admin-msg"></div>
+  </div>
+
+  <div class="panel hidden" id="admin-panel">
+    <h3>Tạo Key</h3>
+    <div class="row">
+      <div class="field"><label>Số lượng</label><input id="g-count" type="number" value="1" min="1" max="200"/></div>
+      <div class="field"><label>Số ngày</label><input id="g-days" type="number" value="30" min="1"/></div>
+      <div class="field"><label>Ghi chú</label><input id="g-note" type="text" placeholder="(tùy chọn)"/></div>
+    </div>
+    <button class="btn btn-primary" id="btn-gen" style="margin-top:12px;">Tạo Key</button>
+    <div class="msg" id="gen-msg"></div>
+  </div>
+
+  <div class="panel hidden" id="admin-list">
+    <h3>Danh Sách Key</h3>
+    <div class="row" style="margin-bottom:12px;">
+      <div class="field"><label>Tìm key</label><input id="search-key" type="text" placeholder="Nhập key..."/></div>
+      <button class="btn btn-primary btn-sm" id="btn-refresh" style="flex:0 0 auto;">Làm Mới</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>Key</th><th>Hết hạn</th><th>Trạng thái</th><th>Thiết bị</th><th>Thao tác</th></tr>
+        </thead>
+        <tbody id="key-tbody"></tbody>
+      </table>
+    </div>
+    <div class="msg" id="list-msg"></div>
+  </div>
+</div>
+
+<script>
+/* ===== SUPABASE ===== */
+https://rocokvbjzjrqgaogdord.supabase.co/rest/v1/
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+/* Mật khẩu admin tạm — thay bằng Supabase Auth nếu triển khai thật */
+const ADMIN_PASS = "phg211";
+
+const $ = id => document.getElementById(id);
+
+/* ===== LOGIN ADMIN ===== */
+$("btn-admin-login").addEventListener("click", ()=>{
+  const p = $("admin-pass").value;
+  const m = $("admin-msg");
+  if(p === ADMIN_PASS){
+    m.className="msg ok"; m.textContent = "OK";
+    $("admin-login").classList.add("hidden");
+    $("admin-panel").classList.remove("hidden");
+    $("admin-list").classList.remove("hidden");
+    loadKeys();
+  }else{
+    m.className="msg err"; m.textContent = "Sai mật khẩu.";
+  }
+});
+
+/* ===== SINH KEY ===== */
+function randomKey(){
+  const c = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let out = "DPI";
+  for(let g=0; g<3; g++){
+    out += "-";
+    for(let i=0;i<4;i++) out += c[Math.floor(Math.random()*c.length)];
+  }
+  return out;
+}
+
+$("btn-gen").addEventListener("click", async ()=>{
+  const count = Math.max(1, Math.min(200, parseInt($("g-count").value)||1));
+  const days  = Math.max(1, parseInt($("g-days").value)||30);
+  const note  = $("g-note").value.trim();
+  const m = $("gen-msg");
+  m.className="msg"; m.textContent = "Đang tạo...";
+
+  const exp = new Date(Date.now() + days*86400000).toISOString();
+  const rows = [];
+  for(let i=0;i<count;i++) rows.push({ key: randomKey(), expires_at: exp, active: true, note });
+
+  try{
+    const { error } = await supabase.from("keys").insert(rows);
+    if(error) throw error;
+    m.className="msg ok"; m.textContent = `Đã tạo ${count} key (${days} ngày).`;
+    loadKeys();
+  }catch(e){
+    m.className="msg err"; m.textContent = e.message || "Lỗi tạo key.";
+  }
+});
+
+/* ===== LOAD + RENDER ===== */
+async function loadKeys(){
+  const m = $("list-msg");
+  m.className="msg"; m.textContent = "Đang tải...";
+  try{
+    const { data, error } = await supabase
+      .from("keys")
+      .select("key,expires_at,active,note,device_id,bound_at")
+      .order("expires_at", { ascending: true });
+    if(error) throw error;
+    render(data||[]);
+    m.textContent = `${data.length} key.`;
+  }catch(e){
+    m.className="msg err"; m.textContent = e.message || "Lỗi tải.";
+  }
+}
+
+function render(rows){
+  const q = $("search-key").value.trim().toLowerCase();
+  const tb = $("key-tbody");
+  tb.innerHTML = "";
+  rows.filter(r => !q || r.key.toLowerCase().includes(q)).forEach(r=>{
+    const exp = new Date(r.expires_at);
+    const left = exp.getTime() - Date.now();
+    const status = !r.active ? "Khóa" : (left>0 ? "Hoạt động" : "Hết hạn");
+    const devShort = r.device_id ? r.device_id.slice(0,12)+"…" : "—";
+    const devTitle = r.device_id ? `Gán lúc: ${new Date(r.bound_at).toLocaleString("vi-VN")}` : "Chưa gán";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="key">${r.key}</td>
+      <td class="exp">${exp.toLocaleString("vi-VN")}<br>${left>0? Math.ceil(left/86400000)+"d": "-"}</td>
+      <td>${status}</td>
+      <td class="exp" title="${devTitle}">${devShort}</td>
+      <td>
+        <div class="actions">
+          <button class="btn btn-sm btn-toggle" data-k="${r.key}" data-a="${r.active}">${r.active? "Khóa":"Mở"}</button>
+          <button class="btn btn-sm btn-reset" data-k="${r.key}" ${r.device_id?"":"disabled"}>Reset máy</button>
+          <button class="btn btn-sm btn-del" data-k="${r.key}">Xóa</button>
+        </div>
+      </td>`;
+    tb.appendChild(tr);
+  });
+
+  tb.querySelectorAll(".btn-toggle").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      const key = b.dataset.k;
+      const newActive = b.dataset.a !== "true";
+      const { error } = await supabase.from("keys").update({active:newActive}).eq("key", key);
+      if(error){ alert(error.message); return; }
+      loadKeys();
+    });
+  });
+
+  tb.querySelectorAll(".btn-reset").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      if(!confirm("Gỡ key khỏi thiết bị hiện tại?")) return;
+      const key = b.dataset.k;
+      const { error } = await supabase.from("keys").update({device_id:null, bound_at:null}).eq("key", key);
+      if(error){ alert(error.message); return; }
+      loadKeys();
+    });
+  });
+
+  tb.querySelectorAll(".btn-del").forEach(b=>{
+    b.addEventListener("click", async ()=>{
+      if(!confirm("Xóa key này?")) return;
+      const key = b.dataset.k;
+      const { error } = await supabase.from("keys").delete().eq("key", key);
+      if(error){ alert(error.message); return; }
+      loadKeys();
+    });
+  });
+}
+
+$("btn-refresh").addEventListener("click", loadKeys);
+$("search-key").addEventListener("input", ()=>{
+  const q = $("search-key").value.trim().toLowerCase();
+  document.querySelectorAll("#key-tbody tr").forEach(tr=>{
+    const k = tr.querySelector(".key")?.textContent?.toLowerCase() || "";
+    tr.style.display = (!q || k.includes(q)) ? "" : "none";
+  });
+});
+</script>
+</body>
+</html>
